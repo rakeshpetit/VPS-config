@@ -1,5 +1,7 @@
 ## Introduction
 
+Configuration to manage my VPS server if things accidentally go wrong.
+
 ## Login to my VPS server
 
 ```shell
