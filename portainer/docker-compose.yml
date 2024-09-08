@@ -1,0 +1,23 @@
+services:
+  portainer:
+    image: portainer/portainer-ce:2.21.0
+    command: -H unix:///var/run/docker.sock
+    restart: always
+    environment:
+      - VIRTUAL_HOST=portainer.rakesh-arun.xyz
+      - VIRTUAL_PORT=9000
+    ports:
+      - "8000:8000"
+      - "9443:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    driver: bridge
+
+volumes:
+  portainer_data:

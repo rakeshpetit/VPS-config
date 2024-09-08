@@ -1,0 +1,16 @@
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    ports:
+      - "127.0.0.1:3001:3001"
+    volumes:
+      - uptime-kuma:/app/data
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    driver: bridge
+
+volumes:
+  uptime-kuma:
