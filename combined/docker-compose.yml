@@ -11,6 +11,7 @@ services:
       - ./letsencrypt:/etc/letsencrypt
     networks:
       - proxy
+
   uptime-kuma:
     image: louislam/uptime-kuma:1
     ports:
@@ -19,6 +20,7 @@ services:
       - uptime-kuma:/app/data
     networks:
       - proxy
+
   ntfy:
     image: binwiederhier/ntfy
     container_name: ntfy
@@ -45,6 +47,16 @@ services:
       retries: 3
       start_period: 40s
     restart: unless-stopped
+
+  my-static-site:
+    image: nginx:alpine
+    container_name: my-static-site
+    ports:
+      - "127.0.0.1:3003:80"
+    volumes:
+      - /root/nginx/astro-site:/usr/share/nginx/html
+    networks:
+      - proxy
 
 networks:
   proxy:

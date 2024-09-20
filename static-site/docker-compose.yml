@@ -1,0 +1,8 @@
+services:
+  my-static-site:
+    image: nginx:alpine
+    container_name: my-static-site
+    ports:
+      - "127.0.0.1:3003:80"
+    volumes:
+      - /root/nginx/my-astro-site:/usr/share/nginx/html
