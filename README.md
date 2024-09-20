@@ -11,6 +11,14 @@ ssh -i  private_key_rsa_file root@OUR_IP_ADDRESS
 ssh root@OUR_IP_ADDRESS
 ```
 
+## Enable Firewall
+
+- Navigate to https://console.hetzner.cloud/ and open Firewalls.
+- Add inbound rules such that only 3 ports are open on the machine.
+- TCP port 22 for SSH
+- TCP port 80 for HTTP
+- TCP port 443 for HTTPS
+
 ## Copy files from local machine to server
 
 ```shell
