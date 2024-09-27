@@ -168,6 +168,43 @@ Create a new Proxy Host with these details:
 - Forward Port: "9443"
 - "Block Common Exploits" checked.
 
+## Hosting a static site
+
+### Copy static site files
+
+Using `scp`, copy the static site files into the directory where we want to run
+the nginx alpine web server. This directory should contain the `index.html` or
+equivalent file to serve the website.
+
+Example: `dist/*` to `/root/nginx/astro-site/*`
+
+### Installation using Docker
+
+Use the `static-site/docker-compose.yml` and copy it to `/root/static-site` in
+the server using `scp`. Optionally keep one `docker-compose.yml` file for all
+the containers.
+
+```shell
+docker-compose up -d
+```
+
+### Cloudflare DNS setup
+
+- Follow previous advice on Cloudflare setup.
+- Create a new CNAME called "me" or your desired name for the static site such
+  that `me.domain.com` is the website URL. Choose a non-proxied status for this
+  record.
+
+### Nginx configuration
+
+Create a new Proxy Host with these details:
+
+- Domain Names: me.domain.com
+- Scheme: http
+- Forward Hostname / IP: "my-static-site" (Virtual Docker network IP name)
+- Forward Port: "80"
+- "Block Common Exploits" checked.
+
 ## CTOP in Docker
 
 https://github.com/bcicen/ctop
