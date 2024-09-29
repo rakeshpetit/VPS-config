@@ -205,6 +205,54 @@ Create a new Proxy Host with these details:
 - Forward Port: "80"
 - "Block Common Exploits" checked.
 
+## Fail2Ban
+
+https://github.com/fail2ban/fail2ban
+
+### Installation using Docker
+
+Use the `fail2ban/docker-compose.yml` and copy it to `/root/fail2ban` in the server using `scp`
+
+```shell
+docker-compose up -d
+```
+
+### Getting Real IPs from CloudFlare
+
+Since we use Cloudflare, we do not always get Real IPs of offending users. In
+order to not block Cloudfare IPs, we want to obtain the Real IPs of users.
+
+Using the nginx proxy manager console, We need to Edit all the Proxy hosts and
+add the following in the "Advanced" configuration.
+
+```
+real_ip_header CF-Connecting-IP;
+```
+
+This ensures we ban the correct IPs.
+
+### Configure Fail2Ban
+
+Once the container is up, we will find a `data` directory under
+`/root/fail2ban`.
+
+- Open `action.d/cloudflare-apiv4.conf` and update `cfuser` and `cftoken`. This
+  token can be obtained from the Cloudflare dashboard.
+- Open `jail.d/npm.local` and replace "Personal IP address" with your actual IP
+  address to whitelist this IP from all bans.
+
+Using `scp`, copy all the files under `action.d`, `filter.d` and `jail.d` into
+the `data` directory in the server.
+
+### Restart Fail2Ban
+
+```shell
+docker-compose down
+docker-compose up -d
+```
+
+Run these commands to restart the container to use the new configuration above.
+
 ## CTOP in Docker
 
 https://github.com/bcicen/ctop
