@@ -1,5 +1,0 @@
-[INCLUDES]
-
-[Definition]
-
-failregex = ^%(__prefix_line)sFailed password for invalid user .* from <HOST> port \d+\s*$
