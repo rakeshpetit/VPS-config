@@ -10,7 +10,7 @@ services:
       - NET_RAW
     volumes:
       - "/root/fail2ban/data:/data"
-      - "/var/log:/var/log:ro"
+      - "/var/log/auth.log:/var/log/auth.log:ro"
       - "/root/nginx/data/logs:/log/npm:ro"
     environment:
       - TZ=Europe/London

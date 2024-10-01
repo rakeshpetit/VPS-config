@@ -7,5 +7,16 @@ logpath = /log/npm/default-host_access.log
           /log/npm/proxy-host-*_access.log
           /log/npm/proxy-host-*_error.log
 maxretry = 3
-bantime = 24h
+bantime = 7d
 findtime = 86400
+
+[sshd]
+enabled = true
+ignoreip = 127.0.0.1/8 192.168.1.0/24 <Personal IP address>
+mode = aggressive
+port = ssh
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = 2
+findtime = 86400
+bantime = 7d
