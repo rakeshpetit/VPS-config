@@ -1,0 +1,15 @@
+version: "3.7"
+
+services:
+  privatebin:
+    container_name: privatebin
+    restart: always
+    read_only: true
+    user: 1000:1000
+    image: privatebin/nginx-fpm-alpine:latest
+    ports:
+      - "127.0.0.1:3004:8080"
+    volumes:
+      - "./privatebin-data:/srv/data"
+    networks:
+      - proxy

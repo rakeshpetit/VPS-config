@@ -253,6 +253,41 @@ docker-compose up -d
 
 Run these commands to restart the container to use the new configuration above.
 
+## PrivateBin
+
+https://github.com/PrivateBin/PrivateBin
+
+### Installation using Docker
+
+Use the `privatebin/docker-compose.yml` and copy it to `/root/privatebin` in the
+server using `scp`.
+
+```shell
+docker-compose up -d
+```
+
+### Post installation
+
+Requests would be handled by nginx proxy manager instead of directly sending
+them to the server from external networks.
+
+### Cloudflare DNS setup
+
+- Configure Cloudflare by following previous instructions.
+- Add a CNAME called "privatebin" or your desired addressed such that
+  `privatebin.domain.com` is the webpage of PrivateBin. Choose a non-proxied
+  status for this record.
+
+### Nginx configuration
+
+Create a new Proxy Host with these details:
+
+- Domain Names: privatebin.domain.com
+- Scheme: http
+- Forward Hostname / IP: "privatebin" (Virtual Docker network IP name)
+- Forward Port: "8080"
+- "Block Common Exploits" checked.
+
 ## CTOP in Docker
 
 https://github.com/bcicen/ctop
