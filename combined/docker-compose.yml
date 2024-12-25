@@ -71,9 +71,21 @@ services:
     networks:
       - proxy
 
+  changedetection:
+    container_name: changedetection
+    restart: unless-stopped
+    image: ghcr.io/dgtlmoon/changedetection.io
+    ports:
+      - "127.0.0.1:5000:5000"
+    volumes:
+      - "changedetection-data:/datastore"
+    networks:
+      - proxy
+
 networks:
   proxy:
     driver: bridge
 
 volumes:
   uptime-kuma:
+  changedetection-data:

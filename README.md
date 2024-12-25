@@ -288,6 +288,40 @@ Create a new Proxy Host with these details:
 - Forward Port: "8080"
 - "Block Common Exploits" checked.
 
+## Changedetection.io
+
+https://github.com/dgtlmoon/changedetection.io
+
+### Installation using Docker
+
+Use the `changedetection/docker-compose.yml` and copy it to `/root/changedetection` in the
+server using `scp`.
+
+```shell
+docker-compose up -d
+```
+
+### Post installation
+
+Requests would be handled by nginx proxy manager instead of directly sending
+them to the server from external networks.
+
+### Cloudflare DNS setup
+
+- Configure Cloudflare by following previous instructions.
+- Add a CNAME called "changedetection" or your desired addressed such that
+  `changedetection.domain.com` is the webpage of Change detection.
+
+### Nginx configuration
+
+Create a new Proxy Host with these details:
+
+- Domain Names: changedetection.domain.com
+- Scheme: http
+- Forward Hostname / IP: "changedetection" (Virtual Docker network IP name)
+- Forward Port: "5000"
+- "Block Common Exploits" checked.
+
 ## CTOP in Docker
 
 https://github.com/bcicen/ctop
