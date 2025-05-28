@@ -82,6 +82,38 @@ services:
     networks:
       - proxy
 
+  postgres:
+    image: postgres:16
+    restart: always
+    environment:
+      # Define these in your .env file
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_DB
+      - POSTGRES_NON_ROOT_USER
+      - POSTGRES_NON_ROOT_PASSWORD
+    volumes:
+      - db_storage:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - proxy
+
+  redis:
+    image: redis:7
+    restart: always
+    networks:
+      - proxy
+    volumes:
+      - redis_storage:/data
+
 networks:
   proxy:
     driver: bridge
@@ -89,3 +121,5 @@ networks:
 volumes:
   uptime-kuma:
   changedetection-data:
+  db_storage:
+  redis_storage:
