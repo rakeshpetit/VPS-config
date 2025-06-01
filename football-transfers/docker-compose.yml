@@ -1,0 +1,8 @@
+services:
+  football-transfers-site:
+    image: nginx:alpine
+    container_name: football-transfers-site
+    ports:
+      - "127.0.0.1:3005:80"
+    volumes:
+      - /root/nginx/football-transfers:/usr/share/nginx/html
