@@ -104,16 +104,33 @@ services:
     networks:
       - proxy
 
+  browserless:
+    image: dgtlmoon/sockpuppetbrowser:latest
+    container_name: browserless
+    restart: unless-stopped
+    environment:
+      - SCREEN_WIDTH=1920
+      - SCREEN_HEIGHT=1080
+      - SCREEN_DEPTH=24
+      - MAX_CONCURRENT_SESSIONS=10
+    networks:
+      - proxy
+    shm_size: "2gb"
+
   changedetection:
     container_name: changedetection
     restart: unless-stopped
-    image: ghcr.io/dgtlmoon/changedetection.io
+    image: ghcr.io/dgtlmoon/changedetection.io:latest
     ports:
       - "127.0.0.1:5000:5000"
     volumes:
       - "changedetection-data:/datastore"
+    environment:
+      - PLAYWRIGHT_DRIVER_URL=ws://browserless:3000/?stealth=1&--disable-web-security=true
     networks:
       - proxy
+    depends_on:
+      - browserless
 
   postgres:
     image: postgres:16
