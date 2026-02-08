@@ -25,6 +25,32 @@ ssh root@OUR_IP_ADDRESS
 scp ./sourceFile root@OUR_IP_ADDRESS:/root/destinationPath/
 ```
 
+## Backup and Recovery
+
+### Create backup on VPS
+
+Run this command on the VPS to compress all critical Docker volumes and configuration data:
+
+```shell
+sudo tar -cvzf volumes-backup-$(date +%F).tar.gz \
+  /var/lib/docker/volumes/nginx_vaultwarden-data \
+  /var/lib/docker/volumes/nginx_db_storage \
+  /var/lib/docker/volumes/nginx_n8n_data \
+  /var/lib/docker/volumes/nginx_redis_storage \
+  /var/lib/docker/volumes/nginx_uptime-kuma \
+  /var/lib/docker/volumes/nginx_changedetection-data \
+  /root/nginx/data \
+  /root/nginx/letsencrypt
+```
+
+### Copy backup to local machine
+
+Run this command from your **local machine** terminal to download the backup:
+
+```shell
+scp root@OUR_IP_ADDRESS:/root/volumes-backup-YYYY-MM-DD.tar.gz .
+```
+
 ## Ubuntu
 
 ```shell
