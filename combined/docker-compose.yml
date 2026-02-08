@@ -132,6 +132,19 @@ services:
     depends_on:
       - browserless
 
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    environment:
+      - SIGNUPS_ALLOWED=false
+    ports:
+      - "127.0.0.1:3006:80"
+    volumes:
+      - vaultwarden-data:/data
+    networks:
+      - proxy
+
   postgres:
     image: postgres:16
     restart: always
@@ -195,3 +208,4 @@ volumes:
   db_storage:
   redis_storage:
   n8n_data:
+  vaultwarden-data:
