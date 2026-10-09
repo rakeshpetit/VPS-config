@@ -1,0 +1,13 @@
+[Unit]
+Description=Pi Sandbox egress restrictions
+After=docker.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/root/pi-agent/host/pi-sandbox-firewall.sh apply
+ExecStop=/root/pi-agent/host/pi-sandbox-firewall.sh remove
+
+[Install]
+WantedBy=multi-user.target

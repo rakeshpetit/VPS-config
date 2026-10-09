@@ -358,3 +358,39 @@ docker run --rm -ti \
  --volume /var/run/docker.sock:/var/run/docker.sock:ro \
  andreasmueller/ctop
 ```
+
+## Pi Agent Sandbox
+
+See `docs/adr/0001-pi-agent-sandbox-on-tailnet.md` and `pi-agent/`. The Sandbox is one hardened container reachable only over Tailscale SSH (`ssh pi@pi-agent`). It is not behind Nginx Proxy Manager and publishes no ports.
+
+### Deploy (on the VPS, after the files are copied to `/root/pi-agent`)
+
+```shell
+cd /root/pi-agent
+./set-secret.sh github_token
+./set-secret.sh openrouter_api_key
+./set-secret.sh ts_authkey        # single-use, tagged key from the Tailscale admin console
+sudo cp host/pi-sandbox-firewall.service /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl enable --now pi-sandbox-firewall
+docker-compose up -d --build
+```
+
+After the first successful join, empty the auth key file: `: > secrets/ts_authkey`.
+
+### Backup additions
+
+Add `/var/lib/docker/volumes/pi-agent_pi-home` and `/var/lib/docker/volumes/pi-agent_pi-workspace` to the backup command above.
+
+### Rotate or revoke credentials
+
+Overwrite with `./set-secret.sh <name>` then `docker-compose restart`. Revoke at the source too (GitHub PAT, OpenRouter key).
+
+### Rollback
+
+```shell
+cd /root/pi-agent && docker-compose down -v
+sudo systemctl disable --now pi-sandbox-firewall && sudo rm /etc/systemd/system/pi-sandbox-firewall.service
+# optional: ./host/pi-sandbox-firewall.sh remove ; swapoff /swapfile && rm /swapfile (and its /etc/fstab line)
+```
+
+Also delete the `pi-agent` machine in the Tailscale admin console, restore the previous policy, and revoke the tokens.

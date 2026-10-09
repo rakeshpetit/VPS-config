@@ -1,0 +1,80 @@
+name: pi-agent
+
+services:
+  pi-agent:
+    build: .
+    image: pi-agent:local
+    container_name: pi-agent
+    hostname: pi-agent
+    restart: unless-stopped
+    init: true
+    user: "1000:1000"
+
+    # Least privilege: no capabilities, no privilege escalation, read-only rootfs.
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777,nosuid
+
+    # Resource limits (host has 2 vCPU / 3.7 GiB RAM shared with other services).
+    mem_limit: 1g
+    memswap_limit: 1g
+    cpus: 1.0
+    pids_limit: 512
+
+    # No ports: reachable only through Tailscale SSH (outbound connection).
+    networks:
+      - pi_sandbox
+
+    volumes:
+      - pi-home:/home/pi
+      - pi-workspace:/workspace
+      - pi-tailscale:/var/lib/tailscale
+
+    secrets:
+      - github_token
+      - openrouter_api_key
+      - ts_authkey
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "tailscale --socket=/tmp/tailscaled.sock status --json | grep -q '\"BackendState\": \"Running\"'",
+        ]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Dedicated network: not shared with nginx_proxy or portainer_proxy.
+# Host-side firewall rules (host/pi-sandbox-firewall.sh) key off this subnet.
+networks:
+  pi_sandbox:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+
+volumes:
+  pi-home:
+  pi-workspace:
+  pi-tailscale:
+
+# Files are owned by uid 1000 with mode 400 on the host (see set-secret.sh).
+secrets:
+  github_token:
+    file: ./secrets/github_token
+  openrouter_api_key:
+    file: ./secrets/openrouter_api_key
+  ts_authkey:
+    file: ./secrets/ts_authkey
