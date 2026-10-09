@@ -13,8 +13,10 @@ x-shared: &shared
     - QUEUE_HEALTH_CHECK_ACTIVE=true
     - N8N_ENCRYPTION_KEY=${ENCRYPTION_KEY}
     - WEBHOOK_URL=${WEBHOOK_URL}
+    - N8N_RESTRICT_FILE_ACCESS_TO=/data/shared
   volumes:
     - n8n_data:/home/node/.n8n
+    - /root/nginx/shared:/data/shared
   depends_on:
     redis:
       condition: service_healthy
