@@ -239,6 +239,14 @@ https://github.com/fail2ban/fail2ban
 
 Use the `fail2ban/docker-compose.yml` and copy it to `/root/fail2ban` in the server using `scp`
 
+The compose file bind-mounts the `/var/log` directory, not `/var/log/auth.log`. Mounting the single file
+breaks the `sshd` jail after the first logrotate (the container keeps reading the rotated-away
+file, so no new SSH failures are seen or banned). Verify after any change that the inode matches:
+
+```shell
+stat -c %i /var/log/auth.log; docker exec fail2ban stat -c %i /var/log/auth.log
+```
+
 ```shell
 docker-compose up -d
 ```

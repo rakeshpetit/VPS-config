@@ -176,9 +176,9 @@ All `PASS`. Public ports identical to step 0. The existing containers match `bas
 
 If you want a stronger check than the Tailnet `tests` block, listen on your laptop (`nc -l 8765`), then from the Sandbox run `tailscale --socket=/tmp/tailscaled.sock nc <laptop-tailnet-ip> 8765`. It should hang and receive nothing. (`tailscale ping` is not a valid test because it bypasses ACLs.)
 
-### 12. Optional: turn off password login on the Host's sshd (not done in the original setup)
+### 12. Turn off password login on the Host's sshd (applied 2026-11-15)
 
-The Host's public SSH on port 22 is unchanged by this setup. It still accepts passwords. Keys-only is safer, but a mistake can lock you out, so keep a second session open.
+The Host's public SSH on port 22 is unchanged by the sandbox setup itself. Password login was turned off on 2026-11-15 using the steps below (`/etc/ssh/sshd_config.d/01-no-password.conf`); repeat them on a rebuilt server. Keys-only is safer, but a mistake can lock you out, so keep a second session open.
 
 ```shell
 ssh -i $K $V        # session 1: keep open
