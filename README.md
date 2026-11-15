@@ -369,7 +369,7 @@ docker run --rm -ti \
 
 ## Pi Agent Sandbox
 
-See `docs/adr/0001-pi-agent-sandbox-on-tailnet.md` and `pi-agent/`. The Sandbox is one hardened container reachable only over Tailscale SSH (`ssh pi@pi-agent`). It is not behind Nginx Proxy Manager and publishes no ports.
+See `docs/adr/0001-pi-agent-sandbox-on-tailnet.md` and `pi-agent/`. The Sandbox is one hardened container reachable only over the Tailnet: Tailscale SSH (`ssh pi@pi-agent`) or the pi-web browser UI at `https://pi-agent.<tailnet>.ts.net`. It is not behind Nginx Proxy Manager and publishes no ports.
 
 ### Deploy (on the VPS, after the files are copied to `/root/pi-agent`)
 
