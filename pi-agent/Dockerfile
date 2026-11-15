@@ -2,7 +2,9 @@ FROM tailscale/tailscale:v1.102.5 AS tailscale
 
 FROM node:22-bookworm-slim
 
-ARG PI_VERSION=0.73.1
+# Pi moved from @mariozechner/ to @earendil-works/ (the old package is deprecated at 0.73.1).
+ARG PI_VERSION=1.5.2
+ARG PI_WEB_VERSION=1.202611.3
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
@@ -13,14 +15,18 @@ RUN apt-get update \
 COPY --from=tailscale /usr/local/bin/tailscaled /usr/local/bin/tailscaled
 COPY --from=tailscale /usr/local/bin/tailscale /usr/local/bin/tailscale
 
-# Real pi lives under /opt/pi; /usr/local/bin/pi is the secret-loading wrapper.
-RUN npm install -g --prefix /opt/pi @mariozechner/pi-coding-agent@${PI_VERSION} \
+# Real pi and pi-web live under /opt/pi (same prefix so pi-web's peer dependencies
+# resolve to this Pi). /usr/local/bin/pi is the secret-loading wrapper.
+RUN npm install -g --prefix /opt/pi \
+      @earendil-works/pi-coding-agent@${PI_VERSION} \
+      @jmfederico/pi-web@${PI_WEB_VERSION} \
  && npm cache clean --force
 
 COPY pi-wrapper.sh /usr/local/bin/pi
 COPY git-credential-pi-token.sh /usr/local/bin/git-credential-pi-token
+COPY pi-web-wrapper.sh /usr/local/bin/pi-web-wrapper
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod 0755 /usr/local/bin/pi /usr/local/bin/git-credential-pi-token /usr/local/bin/entrypoint.sh \
+RUN chmod 0755 /usr/local/bin/pi /usr/local/bin/pi-web-wrapper /usr/local/bin/git-credential-pi-token /usr/local/bin/entrypoint.sh \
  && git config --system credential.helper /usr/local/bin/git-credential-pi-token
 
 # uid/gid 1000 matches the owner of the host-side secret files. node:22 ships a

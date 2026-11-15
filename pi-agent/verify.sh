@@ -38,9 +38,23 @@ n=$(docker inspect pi-agent | grep -cE 'sk-or-|github_pat_|ghp_|tskey-')
 [ "$n" = "0" ] && ok "no token patterns in docker inspect" || bad "token pattern found in docker inspect ($n)"
 n=$(docker logs pi-agent 2>&1 | grep -cE 'sk-or-|github_pat_|ghp_|tskey-')
 [ "$n" = "0" ] && ok "no token patterns in container logs" || bad "token pattern in logs ($n)"
+for f in github_token openrouter_api_key; do
+  x "[ -r /run/secrets/$f ]" >/dev/null && ok "pi user can read $f" || bad "pi user cannot read $f (host file must be uid 1000, mode 400: chown 1000:1000 secrets/*)"
+done
 x 'env | grep -ciE "sk-or-|github_pat_|ghp_|tskey-"' | grep -q '^0$' && ok "no tokens in default shell env" || bad "token in default env"
 x 'pi --version' && ok "pi runs" || bad "pi"
 x 'git config --system credential.helper'
+
+echo "== web ui (pi-web)"
+# The image has no procps/iproute2, so read /proc directly. [x] keeps grep from matching itself.
+x 'grep -aql "server/[s]essiond.js" /proc/[0-9]*/cmdline' && ok "pi-web session daemon running" || bad "pi-web session daemon"
+x 'grep -aql "pi-web/dist/bin/../server/[i]ndex.js" /proc/[0-9]*/cmdline' && ok "pi-web server running" || bad "pi-web server"
+# 8504 = 0x2138. Any listener on it that is not 127.0.0.1 / ::1 is a failure.
+x 'awk '"'"'$4=="0A" && $2 ~ /:2138$/ && $2!="0100007F:2138" && $2!="00000000000000000000000001000000:2138"'"'"' /proc/net/tcp /proc/net/tcp6 | grep -q .' && bad "pi-web listens beyond localhost" || ok "pi-web bound to localhost only"
+dns=$(x "tailscale --socket=/tmp/tailscaled.sock status --json | jq -r '.Self.DNSName // empty' | sed 's/\.$//'")
+c=$(x "curl -s -o /dev/null -m 8 -w %{http_code} -H 'Host: $dns' http://127.0.0.1:8504/"); [ "$c" = "200" ] && ok "pi-web answers for $dns" || bad "pi-web for $dns -> $c"
+c=$(x "curl -s -o /dev/null -m 8 -w %{http_code} -H 'Host: evil.example.com' http://127.0.0.1:8504/"); [ "$c" = "403" ] && ok "pi-web rejects unknown Host" || bad "unknown Host -> $c"
+x 'tailscale --socket=/tmp/tailscaled.sock serve status' | grep -q 'tailnet only' && ok "tailscale serve is tailnet only (not Funnel)" || bad "tailscale serve status (expect 'tailnet only')"
 
 echo "== existing services"
 for p in 3001 3002 3003 3004 3005 3006 5000 5678; do
