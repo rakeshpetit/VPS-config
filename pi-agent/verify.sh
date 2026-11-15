@@ -47,8 +47,7 @@ x 'git config --system credential.helper'
 
 echo "== web ui (pi-web)"
 # The image has no procps/iproute2, so read /proc directly. [x] keeps grep from matching itself.
-x 'grep -aql "server/[s]essiond.js" /proc/[0-9]*/cmdline' && ok "pi-web session daemon running" || bad "pi-web session daemon"
-x 'grep -aql "pi-web/dist/bin/../server/[i]ndex.js" /proc/[0-9]*/cmdline' && ok "pi-web server running" || bad "pi-web server"
+x 'grep -aql "bin/pi-[w]eb" /proc/[0-9]*/cmdline' && ok "pi-web running" || bad "pi-web"
 # 8504 = 0x2138. Any listener on it that is not 127.0.0.1 / ::1 is a failure.
 x 'awk '"'"'$4=="0A" && $2 ~ /:2138$/ && $2!="0100007F:2138" && $2!="00000000000000000000000001000000:2138"'"'"' /proc/net/tcp /proc/net/tcp6 | grep -q .' && bad "pi-web listens beyond localhost" || ok "pi-web bound to localhost only"
 dns=$(x "tailscale --socket=/tmp/tailscaled.sock status --json | jq -r '.Self.DNSName // empty' | sed 's/\.$//'")

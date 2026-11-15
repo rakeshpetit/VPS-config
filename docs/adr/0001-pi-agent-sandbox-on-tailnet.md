@@ -10,7 +10,7 @@ The Pi Agent runs shell commands on our behalf, so a compromise must not reach t
 
 ## Addendum: pi-web (browser access)
 
-The owner can also use the Pi Agent from a browser through [pi-web](https://github.com/jmfederico/pi-web), running inside the same Sandbox. It binds to `127.0.0.1` only and is published to the Tailnet over HTTPS with Tailscale Serve, so the Sandbox still publishes no ports and has no public path. pi-web has no authentication of its own, so the Tailnet is the access control, and the Tailscale SSH re-approval does not apply to the browser. Its host allow-list is generated from the node's `*.ts.net` name at start. Rejected: putting it behind Nginx Proxy Manager (would make it a Public Service) and a second container (would need its own Agent Credentials and a way to reach the Sandbox).
+The owner can also use the Pi Agent from a browser through [pi-web](https://github.com/agegr/pi-web), running inside the same Sandbox. It binds to `127.0.0.1` only and is published to the Tailnet over HTTPS with Tailscale Serve, so the Sandbox still publishes no ports and has no public path. pi-web's optional password login is not enabled, so the Tailnet is the access control, and the Tailscale SSH re-approval does not apply to the browser. Its host allow-list (`PI_WEB_ALLOWED_HOSTS`) is set from the node's `*.ts.net` name at start. Rejected: putting it behind Nginx Proxy Manager (would make it a Public Service) and a second container (would need its own Agent Credentials and a way to reach the Sandbox).
 
 ## Consequences
 

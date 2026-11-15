@@ -1,6 +1,6 @@
 #!/bin/bash
-# Loads Agent Credentials into the process it launches (pi-web's session daemon,
-# which starts the Pi sessions). Usage: pi-web-wrapper <command> [args...]
+# Loads Agent Credentials into the process it launches (pi-web, which runs the Pi
+# sessions in-process). Usage: pi-web-wrapper <command> [args...]
 set -euo pipefail
 
 read_secret() {

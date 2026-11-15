@@ -2,9 +2,9 @@
 # Runs, as the unprivileged "pi" user:
 #   - tailscaled in userspace mode (no TUN, no capabilities), joined to the
 #     tailnet with Tailscale SSH enabled
-#   - pi-web (session daemon + web server), bound to 127.0.0.1 only, published to
-#     the tailnet over HTTPS by Tailscale Serve
-# If any of the long-running processes exits, the container exits and Docker
+#   - pi-web (agegr/pi-web), bound to 127.0.0.1 only, published to the tailnet
+#     over HTTPS by Tailscale Serve
+# If either long-running process exits, the container exits and Docker
 # restarts it.
 set -euo pipefail
 
@@ -35,23 +35,22 @@ if [ -s "$AUTHKEY_FILE" ]; then
 fi
 ts up "${up_args[@]}"
 
-# pi-web config is generated on every start so the tailnet hostname is never
-# hard-coded. pi-web only answers requests whose Host header is this name.
+# The tailnet hostname is read on every start so it is never hard-coded. pi-web
+# answers only loopback Hosts plus the names in PI_WEB_ALLOWED_HOSTS (others get 403).
 dns_name=""
 for _ in $(seq 1 15); do
   dns_name="$(ts status --json | jq -r '.Self.DNSName // empty' | sed 's/\.$//')"
   [ -n "$dns_name" ] && break
   sleep 1
 done
-export PI_WEB_CONFIG=/tmp/pi-web-config.json
-export PI_WEB_PORT
 if [ -n "$dns_name" ]; then
-  jq -n --arg h "$dns_name" --argjson p "$PI_WEB_PORT" \
-    '{host: "127.0.0.1", port: $p, hostAccess: {mode: "restricted", hosts: [$h]}}' > "$PI_WEB_CONFIG"
+  export PI_WEB_ALLOWED_HOSTS="$dns_name"
 else
-  echo "WARNING: no tailnet DNS name (is MagicDNS enabled?); pi-web host restriction not set" >&2
-  jq -n --argjson p "$PI_WEB_PORT" '{host: "127.0.0.1", port: $p}' > "$PI_WEB_CONFIG"
+  echo "WARNING: no tailnet DNS name (is MagicDNS enabled?); the tailnet URL will be rejected by pi-web" >&2
 fi
+# No update checks and no browser. Idle sessions are shut down after pi-web's default
+# 10 minutes (PI_WEB_IDLE_TIMEOUT_MS), which also frees memory under the 1 GiB limit.
+export PI_WEB_SKIP_VERSION_CHECK=1 PI_WEB_NO_OPEN=1
 
 # Publish pi-web to the tailnet only (not Funnel). Never fatal: if HTTPS
 # certificates are not enabled on the tailnet this fails and SSH keeps working.
@@ -59,12 +58,8 @@ if ! timeout 30 tailscale --socket="$SOCKET" serve --bg --https=443 "http://127.
   echo "WARNING: tailscale serve failed; enable HTTPS certificates in the Tailscale admin console (DNS page)" >&2
 fi
 
-# The session daemon starts the Pi sessions, so it gets the Agent Credentials.
-# The web server does not need them.
-/usr/local/bin/pi-web-wrapper /opt/pi/bin/pi-web-sessiond &
-pids+=($!)
-sleep 2
-/opt/pi/bin/pi-web-server &
+# pi-web runs the Pi sessions in-process, so it gets the Agent Credentials.
+/usr/local/bin/pi-web-wrapper /opt/pi/bin/pi-web --hostname 127.0.0.1 --port "$PI_WEB_PORT" --no-open &
 pids+=($!)
 
 wait -n || true

@@ -15,7 +15,7 @@ Or open `https://pi-agent.<your-tailnet>.ts.net` in a browser on a Tailnet devic
 | --- | --- | --- | --- |
 | Image definition, compose, scripts | this directory (`/root/pi-agent` on the VPS) | yes | yes |
 | Agent Credentials | `/root/pi-agent/secrets/*` on the VPS (root dir 700, files uid 1000 mode 400) | yes (host files) | **never** |
-| Pi state (`~/.pi`, shell history) and pi-web state (`~/.pi-web`: projects, sessions) | volume `pi-agent_pi-home` | yes, unless volumes are deleted | no |
+| Pi state (`~/.pi`, shell history) and pi-web state (sessions, settings: `~/.pi/agent`) | volume `pi-agent_pi-home` | yes, unless volumes are deleted | no |
 | Code checkouts | volume `pi-agent_pi-workspace` | yes, unless volumes are deleted | no (push your work to GitHub) |
 | Tailscale node key | volume `pi-agent_pi-tailscale` | yes, unless volumes are deleted | no |
 | Egress firewall rules | systemd unit `pi-sandbox-firewall` on the VPS | yes (re-applied at boot) | unit file is |
@@ -312,27 +312,28 @@ Paste `tailscale-policy.hujson` into https://login.tailscale.com/admin/acls/file
 
 ## Web UI (pi-web)
 
-[pi-web](https://github.com/jmfederico/pi-web) is a browser UI for the Pi Agent: projects, sessions that keep running when you disconnect, a terminal and git views. It runs **inside the Sandbox** next to Pi.
+[pi-web](https://github.com/agegr/pi-web) (npm package `@agegr/pi-web`) is a browser UI for the Pi Agent: it reads and resumes the same sessions as the `pi` CLI, and adds a file browser, git diffs and model configuration. It runs **inside the Sandbox** next to Pi.
 
 How it is wired (all in `entrypoint.sh`):
 
-- `pi-web-sessiond` (starts the Pi sessions, so it is launched through `pi-web-wrapper` and gets the Agent Credentials) and `pi-web-server` run as the `pi` user. If either exits, the container exits and Docker restarts it.
-- `pi-web-server` binds to `127.0.0.1:8504` only. The container still publishes **no ports**.
+- `pi-web` runs as the `pi` user, launched through `pi-web-wrapper` because it runs the Pi sessions in-process and so needs the Agent Credentials. If it exits, the container exits and Docker restarts it.
+- `pi-web` binds to `127.0.0.1:8504` only. The container still publishes **no ports**.
 - `tailscale serve --bg --https=443 http://127.0.0.1:8504` publishes it to the Tailnet over HTTPS (not Funnel, so never the public internet). The existing ACL already lets your members reach `tag:pi-agent`, so the Tailnet policy is unchanged.
-- pi-web has **no login of its own**. Access control is the Tailnet: any of your signed-in Tailnet devices can open it. Unlike `ssh pi@pi-agent`, there is no 12-hour re-approval. To limit it to specific devices, tighten the ACL for `tag:pi-agent:443`.
-- On every start the entrypoint writes `/tmp/pi-web-config.json` with `hostAccess` restricted to the node's `*.ts.net` name, so pi-web answers only requests for that Host (an unknown Host gets 403). Settings changed in the pi-web UI that are stored in this file are lost on restart. Persistent pi-web state (`~/.pi-web`) is on the `pi-home` volume.
+- pi-web has a password option (`PI_WEB_PASSWORD`) that is **not enabled**, so there is **no login**. Access control is the Tailnet: any of your signed-in Tailnet devices can open it. Unlike `ssh pi@pi-agent`, there is no 12-hour re-approval. To limit it to specific devices, tighten the ACL for `tag:pi-agent:443`.
+- On every start the entrypoint sets `PI_WEB_ALLOWED_HOSTS` to the node's `*.ts.net` name, so pi-web answers only loopback and that Host (an unknown Host gets 403). pi-web state (sessions, settings, credentials entered in its Models panel) is in `~/.pi/agent` on the `pi-home` volume, shared with the `pi` CLI.
+- pi-web's npm package ships preview-mode secrets that would let a request skip its Host check, and it rotates them at start. The rootfs is read-only, so the `Dockerfile` rotates them at build time instead. At start pi-web still logs "could not rotate pi-web's preview-mode secrets"; that is expected and harmless here.
 - Memory is unchanged at 1 GiB for the whole container (Tailscale, Pi, pi-web, and the sessions and terminals you start). Watch `docker stats pi-agent --no-stream` and `docker inspect pi-agent --format '{{.State.OOMKilled}}'` while testing, and raise `mem_limit` and `memswap_limit` in `docker-compose.yml` only if the VPS has room.
 
 Checks: `vps 'bash -s' < pi-agent/verify.sh` has a "web ui" section. Logs: `docker logs pi-agent`.
 
 ## Upgrading Pi and pi-web
 
-Versions are pinned in the `Dockerfile`: `PI_VERSION` (package `@earendil-works/pi-coding-agent`; the old `@mariozechner/` package is deprecated and stops at 0.73.1) and `PI_WEB_VERSION` (`@jmfederico/pi-web`). Both require Node 22.19 or later, which the `node:22` base image provides when built with `--pull`.
+Versions are pinned in the `Dockerfile`: `PI_VERSION` (package `@earendil-works/pi-coding-agent`; the old `@mariozechner/` package is deprecated and stops at 0.73.1) and `PI_WEB_VERSION` (`@agegr/pi-web`). Both require Node 22.19 or later, which the `node:22` base image provides when built with `--pull`. pi-web pins exact versions of the Pi packages, so `PI_VERSION` must equal the one in pi-web's `package.json` (`npm view @agegr/pi-web@<version> dependencies`).
 
 ```shell
 # find the latest versions (any machine with node; with asdf: ASDF_NODEJS_VERSION=<22+ version>)
 npm view @earendil-works/pi-coding-agent version
-npm view @jmfederico/pi-web version
+npm view @agegr/pi-web version
 
 # edit PI_VERSION / PI_WEB_VERSION in pi-agent/Dockerfile, then
 rsync -av --exclude secrets/ -e "ssh -i $K" pi-agent/ $V:/root/pi-agent/
@@ -341,7 +342,7 @@ vps 'docker exec pi-agent /opt/pi/bin/pi --version'
 vps 'bash -s' < pi-agent/verify.sh
 ```
 
-Volumes (Pi and pi-web state, workspace, Tailscale key) survive the rebuild. Check the Pi and pi-web release notes before a major bump. To roll back, put the previous versions back in the `Dockerfile` and rebuild. Keep Pi and pi-web compatible: pi-web declares Pi as a peer dependency, so a pi-web update may require a newer Pi.
+Volumes (Pi and pi-web state, workspace, Tailscale key) survive the rebuild. Check the Pi and pi-web release notes before a major bump. To roll back, put the previous versions back in the `Dockerfile` and rebuild. Keep Pi and pi-web compatible: a pi-web update may pin a newer Pi, so bump `PI_VERSION` to match.
 
 ## Egress firewall
 

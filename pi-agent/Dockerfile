@@ -4,7 +4,7 @@ FROM node:22-bookworm-slim
 
 # Pi moved from @mariozechner/ to @earendil-works/ (the old package is deprecated at 0.73.1).
 ARG PI_VERSION=1.5.2
-ARG PI_WEB_VERSION=1.202611.3
+ARG PI_WEB_VERSION=0.17.0
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
@@ -15,11 +15,17 @@ RUN apt-get update \
 COPY --from=tailscale /usr/local/bin/tailscaled /usr/local/bin/tailscaled
 COPY --from=tailscale /usr/local/bin/tailscale /usr/local/bin/tailscale
 
-# Real pi and pi-web live under /opt/pi (same prefix so pi-web's peer dependencies
-# resolve to this Pi). /usr/local/bin/pi is the secret-loading wrapper.
+# Real pi and pi-web live under /opt/pi. pi-web (agegr/pi-web) pins its own copy of
+# the Pi packages as exact dependencies, so keep PI_VERSION equal to the version
+# its package.json pins. /usr/local/bin/pi is the secret-loading wrapper.
+# pi-web ships the preview-mode secrets of its published build, which let a request
+# skip its Host and password checks. It would rotate them at every start, but the
+# rootfs is read-only, so rotate them once here: the values are then unique to
+# this image instead of public.
 RUN npm install -g --prefix /opt/pi \
       @earendil-works/pi-coding-agent@${PI_VERSION} \
-      @jmfederico/pi-web@${PI_WEB_VERSION} \
+      @agegr/pi-web@${PI_WEB_VERSION} \
+ && node -e "const d='/opt/pi/lib/node_modules/@agegr/pi-web/.next'; const r=require('/opt/pi/lib/node_modules/@agegr/pi-web/bin/rotate-preview-secrets').rotatePreviewSecrets(d); if(!r.ok){console.error('preview secret rotation failed',r);process.exit(1)}" \
  && npm cache clean --force
 
 COPY pi-wrapper.sh /usr/local/bin/pi

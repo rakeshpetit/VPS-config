@@ -37,7 +37,7 @@ The single container in which the Pi Agent runs. It is the only thing the owner 
 _Avoid_: VM (it is a container, not a virtual machine), agent box
 
 **Web UI**:
-pi-web, the browser interface to the Pi Agent. It runs inside the Sandbox and is published to the Tailnet only; it has no login of its own.
+pi-web, the browser interface to the Pi Agent. It runs inside the Sandbox and is published to the Tailnet only; its optional password login is not enabled.
 _Avoid_: dashboard, frontend
 
 **Agent Credential**:
